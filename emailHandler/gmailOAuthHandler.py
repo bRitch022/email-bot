@@ -99,8 +99,8 @@ if __name__ == '__main__':
 
     try:
         service = get_service()
-        message = create_message("from@gmail.com", "to@gmail.com", "Test subject", "Test body")
-        send_message(service, "from@gmail.com", message)
+        message = create_message("bryan.ritchie2@gmail.com", "bryan.ritchie2@gmail.com", "Test subject", "Test body")
+        send_message(service, "bryan.ritchie2@gmail.com", message)
 
     except Exception as e:
         logging.error(e)
