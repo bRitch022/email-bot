@@ -16,3 +16,11 @@ A bot designed to quickly and autonomously reply to emails which meet one or mor
 * User must have the ability to specify the desired sender, subject line, and/or message body criteria
 * User must have the ability to enter personal email credentials without those credentials being compromised
 
+## Python Environment Setup
+From within Linux environment:  
+```sudo apt-get update```
+
+From the `email-bot` directory:  
+```python3 -m venv pyenv```  
+```source pyenv/bin/activate```  
+```python3 -m pip install -r pyenv/requirements.txt```
