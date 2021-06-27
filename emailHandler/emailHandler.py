@@ -147,6 +147,37 @@ class gmailHandler(emailHandler_API):
 
         return messages
 
+    def get_message(self, message_id, format="full", metadataHeaders=None):
+        """Get a specified message in an email account.
+        
+        Args:
+            message_id: string, The ID of the message to retrieve
+            format: string, The format to return the message in
+                Allowed values
+                minimal - Returns only email message ID and labels; does not return the email headers, body, or payload.
+                full - Returns the full email message data with body content parsed in the `payload` field; the `raw` field is not used. Format cannot be used when accessing the api using the gmail.metadata scope.
+                raw - Returns the full email message data with body content in the `raw` field as a base64url encoded string; the `payload` field is not used. Format cannot be used when accessing the api using the gmail.metadata scope.
+                metadata - Returns only email message ID, labels, and email headers
+            metadataHeaders: string, When given and format is `METADATA`, only include headers specified.
+
+        Returns:
+            An object of the form detailed in https://googleapis.github.io/google-api-python-client/docs/dyn/gmail_v1.users.messages.html#get
+            """
+
+        if self.service is None:
+            self.service = self.get_service()
+
+        try:
+            message = (self.service.users().messages().get(\
+                userId=self.user,\
+                id=message_id,\
+                format=format,\
+                metadataHeaders=metadataHeaders).execute())
+        except errors.HttpError as error:
+            logging.error('An HTTP error occurred: %s', error)
+
+        return message
+
 
 class POP3Handler(emailHandler_API):
     """ A class to handle emails to and from a POP3 server
@@ -192,7 +223,16 @@ def testGmailHandler_send():
         logging.error(e)
         raise
 
-def testGmailHandler_list():
+def testGmailHandler_read():
+    """ Reading emails from Gmail using Gmail API in Python
+    Author: devansh07
+    Date: October 1, 2020
+    URL: https://www.geeksforgeeks.org/how-to-read-emails-from-gmail-using-gmail-api-in-python/
+
+    Modified by: Bryan Ritchie
+    Date: June 2021
+    """
+
     user = "bryan.ritchie2@gmail.com"
     criteria = "from:bryan.ritchie2@gmail.com is:unread subject:Test Subject"
 
@@ -212,9 +252,56 @@ def testGmailHandler_list():
         raise
 
     print("Found messages: {}".format(result["resultSizeEstimate"]))
-    # print("Messages: {}".format(messages))
-    messages= result.get('messages')
+    messages=result.get('messages')
 
     for msg in messages:
-        print("{}".format(msg['id']))
+        sender=None
+        subject=None
+
+        # Capture message id
+        msg_id = msg['id']
+        print("Getting {}".format(msg_id))
+
+        # Get the content
+        content = g_handler.get_message(msg_id)
+
+        try:
+            # Parse the content
+            internalDate = content['internalDate']
+            payload = content['payload']
+            headers = payload['headers']
+
+            # Parse headers
+            for header in headers:
+                match header['name']:
+                    case "to":
+                        receiver = header['value']
+                    case "from":
+                        sender = header['value']
+                    case "subject":
+                        subject = header['value']
+                    case "Date":
+                        date = header['value']
+                    case _:
+                        pass
+
+            parts = payload.get('body')
+            data = parts.get('data')
+            decoded_data = base64.b64decode(data)
+            body = decoded_data.decode()
+        
+            print("From: {}".format(sender))
+            print("To: {}".format(receiver))
+            print("Subject: {}".format(subject))
+            print("Date: {}".format(date))
+            print("Epoch: {}".format(internalDate))
+            print("\nBody: {}\n\n".format(body))
+
+        except KeyError as e:
+            print(e)
+            pass
+
+
+
+    
     
