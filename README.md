@@ -19,7 +19,7 @@ A bot designed to quickly and autonomously reply to emails which meet one or mor
 ## Python Environment Setup
 From within Linux environment:  
 ```sudo apt-get update```  
-```apt-get install python 3.10 python3.10-dev python3.10-venv```  
+```apt-get install python3.10 python3.10-venv```  
 
 Ensure `python` is a link that points to python3.10  
 ```ls -l `which python`*```
