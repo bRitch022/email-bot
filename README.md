@@ -32,7 +32,7 @@ Assuming `python` is in `/usr/bin/`
 From the `email-bot` directory:  
 ```python -m venv pyenv```  
 ```source pyenv/bin/activate```  
-```python -m pip install -r pyenv/requirements.txt```
+```python -m pip install -r requirements.txt```
 
 ## Environment Variable Setup
 * The `email-dot/emailHandler` directory contains a file called `.env.example`. Copy this file and rename it to `.env`.
