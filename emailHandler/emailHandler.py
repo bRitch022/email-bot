@@ -118,6 +118,36 @@ class gmailHandler(emailHandler_API):
         b = base64.urlsafe_b64encode(s.encode('utf-8'))
         return {'raw': b.decode('utf-8')}
 
+    def list_messages(self, includeSpamTrash=None, maxResults=None, criteria=None):
+        """List messages in an email account.
+
+        Args:
+            includeSpamTrash: boolean, Include messages from `SPAM` and `TRASH` in the results.
+            maxResults: integer, Maximum number of messages to return.
+            criteria: string, Only return messages matching the specified query. Supports the same query format as the Gmail search box. 
+                      For example, `"from:someuser@example.com rfc822msgid: is:unread"`. 
+                      Parameter cannot be used when accessing the api using the gmail.metadata scope.
+
+        Returns:
+            An object of the format detailed in https://googleapis.github.io/google-api-python-client/docs/dyn/gmail_v1.users.messages.html#list
+        """
+
+        if self.service is None:
+            self.service = self.get_service()
+            
+        try:
+            messages = (self.service.users().messages().list(\
+                    userId=self.user,\
+                    includeSpamTrash=includeSpamTrash,\
+                    labelIds=None,\
+                    pageToken=None,\
+                    q=criteria).execute())
+        except errors.HttpError as error:
+            logging.error('An HTTP error occurred: %s', error)
+
+        return messages
+
+
 class POP3Handler(emailHandler_API):
     """ A class to handle emails to and from a POP3 server
         Currently, only gmail is being supported
@@ -138,15 +168,15 @@ class POP3Handler(emailHandler_API):
     def get_mail(self):
         return len(self.session.list()[1])
 
-def testGmailHandler():
+def testGmailHandler_send():
     sender = "bryan.ritchie2@gmail.com"
     to = "bryan.ritchie2@gmail.com"
     subject = "Test subject"
     message_text = "Test body"
 
-    print("Default Sender: {}\nDefault Recipient: {}\nDefault Subject: {}\nDefault Message: {}\n".from(sender, to, subject, message_text))
+    print("Default Sender: {}\nDefault Recipient: {}\nDefault Subject: {}\nDefault Message: {}\n".format(sender, to, subject, message_text))
 
-    g_handler = gmailHandler("bryan.ritchie2@gmail.com")
+    g_handler = gmailHandler(sender)
 
     logging.basicConfig(
         format="[%(levelname)s] %(message)s",
@@ -161,3 +191,30 @@ def testGmailHandler():
     except Exception as e:
         logging.error(e)
         raise
+
+def testGmailHandler_list():
+    user = "bryan.ritchie2@gmail.com"
+    criteria = "from:bryan.ritchie2@gmail.com is:unread subject:Test Subject"
+
+    g_handler = gmailHandler(user)
+
+    logging.basicConfig(
+        format="[%(levelname)s] %(message)s",
+        level=logging.INFO
+    )
+
+    try:
+        service = g_handler.get_service()
+        result = g_handler.list_messages(criteria=criteria)
+
+    except Exception as e:
+        logging.error(e)
+        raise
+
+    print("Found messages: {}".format(result["resultSizeEstimate"]))
+    # print("Messages: {}".format(messages))
+    messages= result.get('messages')
+
+    for msg in messages:
+        print("{}".format(msg['id']))
+    
