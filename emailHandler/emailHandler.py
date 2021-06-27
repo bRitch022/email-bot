@@ -19,16 +19,23 @@ class emailHandler_API:
         # # Class enforcement. This MUST be overwritten by child classes
         self.service = None
         self.creds = None
-        self.user=None
+        self.user = None
 
     def get_service(self):
         raise NotImplementedError # Class enforcement
 
     def send_message(self, service, sender, message):
-        raise NotImplementedError # Class enforcement
+        raise NotImplementedError
 
     def create_message(self, sender, to, subject, message_text):
-        raise NotImplementedError # Class enforcement
+        raise NotImplementedError
+
+    def list_messages(self):
+        raise NotImplementedError
+
+    def parse_message(self, content):
+        raise NotImplementedError
+    
 
 class gmailHandler(emailHandler_API):
     """ Gmail OAth2 Handler 
@@ -178,6 +185,56 @@ class gmailHandler(emailHandler_API):
 
         return message
 
+    def parse_message(self, content):
+        """A method to parse a message from it's native API-returned form into a dictionary
+
+            Args:
+                content: list, The encoded message
+
+            Returns:
+                A dictionary containing the message
+        """
+        internalDate = content['internalDate']
+        payload = content['payload']
+        headers = payload['headers']
+
+        # Parse headers
+        for header in headers:
+            match header['name']:
+                case "to":
+                    receiver = header['value']
+                case "from":
+                    sender = header['value']
+                case "subject":
+                    subject = header['value']
+                case "Date":
+                    date = header['value']
+                case _:
+                    pass
+
+        parts = payload.get('body')
+        data = parts.get('data')
+        decoded_data = base64.b64decode(data)
+        body = decoded_data.decode()
+    
+        print("From: {}".format(sender))
+        print("To: {}".format(receiver))
+        print("Subject: {}".format(subject))
+        print("Date: {}".format(date))
+        print("InternalDate (Epoch): {}".format(internalDate))
+        print("\nBody: {}\n\n".format(body))
+
+        parsed_message= {
+            "From": sender,
+            "To": receiver,
+            "Subject": subject,
+            "Date": date,
+            "InternalDate": internalDate,
+            "Body": body,
+        }
+
+        return parsed_message
+
 
 class POP3Handler(emailHandler_API):
     """ A class to handle emails to and from a POP3 server
@@ -267,41 +324,9 @@ def testGmailHandler_read():
 
         try:
             # Parse the content
-            internalDate = content['internalDate']
-            payload = content['payload']
-            headers = payload['headers']
-
-            # Parse headers
-            for header in headers:
-                match header['name']:
-                    case "to":
-                        receiver = header['value']
-                    case "from":
-                        sender = header['value']
-                    case "subject":
-                        subject = header['value']
-                    case "Date":
-                        date = header['value']
-                    case _:
-                        pass
-
-            parts = payload.get('body')
-            data = parts.get('data')
-            decoded_data = base64.b64decode(data)
-            body = decoded_data.decode()
-        
-            print("From: {}".format(sender))
-            print("To: {}".format(receiver))
-            print("Subject: {}".format(subject))
-            print("Date: {}".format(date))
-            print("Epoch: {}".format(internalDate))
-            print("\nBody: {}\n\n".format(body))
+            g_handler.parse_message(content)
 
         except KeyError as e:
             print(e)
             pass
 
-
-
-    
-    
