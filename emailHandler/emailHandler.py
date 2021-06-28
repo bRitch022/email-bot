@@ -22,6 +22,11 @@ class emailHandler_API:
         self.creds = None
         self.user = None
 
+        logging.basicConfig(
+        format="[%(levelname)s] %(message)s",
+        level=logging.INFO
+    )
+
     def get_service(self):
         raise NotImplementedError # Class enforcement
 
@@ -257,12 +262,12 @@ class gmailHandler(emailHandler_API):
         decoded_data = base64.b64decode(data)
         body = decoded_data.decode()
     
-        print("From: {}".format(sender))
-        print("To: {}".format(receiver))
-        print("Subject: {}".format(subject))
-        print("Date: {}".format(date))
-        print("InternalDate (Epoch): {}".format(internalDate))
-        print("\nBody: {}\n\n".format(body))
+        logging.debug("From: {}".format(sender))
+        logging.debug("To: {}".format(receiver))
+        logging.debug("Subject: {}".format(subject))
+        logging.debug("Date: {}".format(date))
+        logging.debug("InternalDate (Epoch): {}".format(internalDate))
+        logging.debug("\nBody: {}\n\n".format(body))
 
         # Store parsed results to a dictionary
         parsed_message= {
@@ -287,7 +292,7 @@ class POP3Handler(emailHandler_API):
         try:
             self.session = poplib.POP3_SSL('pop.gmail.com')
         except poplib.error_proto as e:
-            print({}.format(e))
+            logging.error({}.format(e))
             return
 
         self.session.user(emailCreds.get_USER())
@@ -309,14 +314,9 @@ t_reply = "Found test email. This is the reply"
 
 def testGmailHandler_send():
     """Tests the sending of emails"""
-    print("Default Sender: {}\nDefault Recipient: {}\nDefault Subject: {}\nDefault Message: {}\n".format(t_sender, t_to, t_subject, t_message_body))
+    logging.debug("Default Sender: {}\nDefault Recipient: {}\nDefault Subject: {}\nDefault Message: {}\n".format(t_sender, t_to, t_subject, t_message_body))
 
     g_handler = gmailHandler(t_sender)
-
-    logging.basicConfig(
-        format="[%(levelname)s] %(message)s",
-        level=logging.INFO
-    )
 
     try:
         # Reach out to gmail
@@ -341,15 +341,10 @@ def testGmailHandler_read():
     Modified by: Bryan Ritchie
     Date: June 2021
 
-    Returns: A parsed email message
+    Returns: A parsed email message, and the initialized gmail Handler object
     """
 
     g_handler = gmailHandler(t_user)
-
-    logging.basicConfig(
-        format="[%(levelname)s] %(message)s",
-        level=logging.INFO
-    )
 
     try:
         # Reach out to gmail
@@ -362,13 +357,13 @@ def testGmailHandler_read():
         logging.error(e)
         raise
 
-    print("Found messages: {}".format(result["resultSizeEstimate"]))
+    logging.debug("Found messages: {}".format(result["resultSizeEstimate"]))
     messages=result.get('messages')
 
     for msg in messages:
         # Capture message id
         message_id = msg['id']
-        print("Getting {}".format(message_id))
+        logging.debug("Getting {}".format(message_id))
 
         # Get the content
         content = g_handler.get_message(message_id)
@@ -376,11 +371,11 @@ def testGmailHandler_read():
         try:
             # Parse the content
             parsedMessage = g_handler.parse_message(content)
-            return parsedMessage, g_handler, service
+            return parsedMessage, g_handler
 
         except KeyError as e:
-            print(e)
-            return _, g_handler, service
+            logging.error(e)
+            return _, g_handler
 
 def testGmailHandler_reply(criteria_selection):
     """Tests the reply of emails that meet a certain criteria
@@ -398,7 +393,7 @@ def testGmailHandler_reply(criteria_selection):
     """
 
     replyFlag = False
-    parsedMessage, g_handler, service = testGmailHandler_read()    
+    parsedMessage, g_handler = testGmailHandler_read()    
 
     match criteria_selection:
         case 1:
@@ -432,11 +427,10 @@ def testGmailHandler_reply(criteria_selection):
 
         try:
             # Send reply
-            g_handler.send_message(service, t_user, reply)
+            g_handler.send_message(g_handler.service, t_user, reply)
 
             # Mark responded to message as read
             g_handler.mark_as_read(parsedMessage['Message-Id'])
         
         except errors.HttpError as error:
             logging.error('An HTTP error occurred: %s', error)  
-    
