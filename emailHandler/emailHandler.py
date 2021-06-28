@@ -11,6 +11,7 @@ from google_auth_oauthlib.flow import InstalledAppFlow
 from google.auth.transport.requests import Request
 from googleapiclient import errors
 from googleapiclient.discovery import build
+import time
         
 class emailHandler_API:
     """ A class to handle emails to a from a particular API """
@@ -27,7 +28,7 @@ class emailHandler_API:
     def send_message(self, service, sender, message):
         raise NotImplementedError
 
-    def create_message(self, sender, to, subject, message_text):
+    def create_message(self, sender, to, subject, message_body):
         raise NotImplementedError
 
     def list_messages(self):
@@ -35,7 +36,13 @@ class emailHandler_API:
 
     def parse_message(self, content):
         raise NotImplementedError
+
+    def mark_as_read(self, message_id):
+        raise NotImplementedError
     
+    def mark_as_unread(self, message_id):
+        raise NotImplementedError
+
 
 class gmailHandler(emailHandler_API):
     """ Gmail OAth2 Handler 
@@ -62,6 +69,7 @@ class gmailHandler(emailHandler_API):
         SCOPES = [
             'https://www.googleapis.com/auth/gmail.readonly',
             'https://www.googleapis.com/auth/gmail.send',
+            'https://www.googleapis.com/auth/gmail.modify',
         ]
 
         # The file token.pickle stores the user's access and refresh tokens, and is
@@ -105,19 +113,19 @@ class gmailHandler(emailHandler_API):
         except errors.HttpError as error:
             logging.error('An HTTP error occurred: %s', error)
 
-    def create_message(self, sender, to, subject, message_text):
+    def create_message(self, sender, to, subject, message_body):
         """Create a message for an email.
 
         Args:
             sender: Email address of the sender.
             to: Email address of the receiver.
             subject: The subject of the email message.
-            message_text: The text of the email message.
+            message_body: The text of the email message.
 
         Returns:
             An object containing a base64url encoded email object.
         """
-        message = MIMEText(message_text)
+        message = MIMEText(message_body)
         message['to'] = to
         message['from'] = sender
         message['subject'] = subject
@@ -180,10 +188,38 @@ class gmailHandler(emailHandler_API):
                 id=message_id,\
                 format=format,\
                 metadataHeaders=metadataHeaders).execute())
+
         except errors.HttpError as error:
             logging.error('An HTTP error occurred: %s', error)
 
         return message
+
+    def mark_as_read(self, message_id):
+        if self.service is None:
+            self.service = self.get_service()
+
+        try:
+            (self.service.users().messages().modify(\
+            userId=self.user,\
+            id=message_id,\
+            body={"removeLabelIds": ["UNREAD"]}).execute())
+
+        except errors.HttpError as error:
+            logging.error('An HTTP error occurred: %s', error)
+
+    def mark_as_unread(self, message_id):
+        if self.service is None:
+            self.service = self.get_service()
+
+        try:
+            (self.service.users().messages().modify(\
+            userId=self.user,\
+            id=message_id,\
+            rbody={ 'addLabelIds': ['UNREAD'] }).execute())
+
+        except errors.HttpError as error:
+            logging.error('An HTTP error occurred: %s', error)        
+        
 
     def parse_message(self, content):
         """A method to parse a message from it's native API-returned form into a dictionary
@@ -194,6 +230,7 @@ class gmailHandler(emailHandler_API):
             Returns:
                 A dictionary containing the message
         """
+        # Begin parsing timestamp, payload, and headers
         internalDate = content['internalDate']
         payload = content['payload']
         headers = payload['headers']
@@ -209,9 +246,12 @@ class gmailHandler(emailHandler_API):
                     subject = header['value']
                 case "Date":
                     date = header['value']
+                case "Message-Id":
+                    message_id = header['value']
                 case _:
                     pass
 
+        # Parse and decode message body
         parts = payload.get('body')
         data = parts.get('data')
         decoded_data = base64.b64decode(data)
@@ -224,6 +264,7 @@ class gmailHandler(emailHandler_API):
         print("InternalDate (Epoch): {}".format(internalDate))
         print("\nBody: {}\n\n".format(body))
 
+        # Store parsed results to a dictionary
         parsed_message= {
             "From": sender,
             "To": receiver,
@@ -231,6 +272,7 @@ class gmailHandler(emailHandler_API):
             "Date": date,
             "InternalDate": internalDate,
             "Body": body,
+            "Message-Id": message_id,
         }
 
         return parsed_message
@@ -242,13 +284,11 @@ class POP3Handler(emailHandler_API):
     """
 
     def __init__(self, emailCreds, server='gmail'):
-        # if server is 'gmail':
         try:
             self.session = poplib.POP3_SSL('pop.gmail.com')
         except poplib.error_proto as e:
             print({}.format(e))
             return
-        # else if ...
 
         self.session.user(emailCreds.get_USER())
         self.session.pass_(emailCreds.get_PASS())
@@ -256,15 +296,22 @@ class POP3Handler(emailHandler_API):
     def get_mail(self):
         return len(self.session.list()[1])
 
+
+""" Test Parameters """
+t_sender = "bryan.ritchie2@gmail.com"
+t_user = "bryan.ritchie2@gmail.com"
+t_to = "bryan.ritchie2@gmail.com"
+t_subject = "Test subject"
+t_message_body = "Test body"
+t_criteria = "from:bryan.ritchie2@gmail.com is:unread subject:Test Subject"
+t_reply = "Found test email. This is the reply"
+
+
 def testGmailHandler_send():
-    sender = "bryan.ritchie2@gmail.com"
-    to = "bryan.ritchie2@gmail.com"
-    subject = "Test subject"
-    message_text = "Test body"
+    """Tests the sending of emails"""
+    print("Default Sender: {}\nDefault Recipient: {}\nDefault Subject: {}\nDefault Message: {}\n".format(t_sender, t_to, t_subject, t_message_body))
 
-    print("Default Sender: {}\nDefault Recipient: {}\nDefault Subject: {}\nDefault Message: {}\n".format(sender, to, subject, message_text))
-
-    g_handler = gmailHandler(sender)
+    g_handler = gmailHandler(t_sender)
 
     logging.basicConfig(
         format="[%(levelname)s] %(message)s",
@@ -272,9 +319,14 @@ def testGmailHandler_send():
     )
 
     try:
+        # Reach out to gmail
         service = g_handler.get_service()
-        message = g_handler.create_message(sender, to, subject, message_text)
-        g_handler.send_message(service, sender, message)
+
+        # Create a message 
+        message = g_handler.create_message(t_sender, t_to, t_subject, t_message_body)
+
+        # Send out the message
+        g_handler.send_message(service, t_sender, message)
 
     except Exception as e:
         logging.error(e)
@@ -288,12 +340,11 @@ def testGmailHandler_read():
 
     Modified by: Bryan Ritchie
     Date: June 2021
+
+    Returns: A parsed email message
     """
 
-    user = "bryan.ritchie2@gmail.com"
-    criteria = "from:bryan.ritchie2@gmail.com is:unread subject:Test Subject"
-
-    g_handler = gmailHandler(user)
+    g_handler = gmailHandler(t_user)
 
     logging.basicConfig(
         format="[%(levelname)s] %(message)s",
@@ -301,8 +352,11 @@ def testGmailHandler_read():
     )
 
     try:
+        # Reach out to gmail
         service = g_handler.get_service()
-        result = g_handler.list_messages(criteria=criteria)
+
+        # List messages in inbox, according to test criteria
+        result = g_handler.list_messages(criteria=t_criteria)
 
     except Exception as e:
         logging.error(e)
@@ -312,21 +366,77 @@ def testGmailHandler_read():
     messages=result.get('messages')
 
     for msg in messages:
-        sender=None
-        subject=None
-
         # Capture message id
-        msg_id = msg['id']
-        print("Getting {}".format(msg_id))
+        message_id = msg['id']
+        print("Getting {}".format(message_id))
 
         # Get the content
-        content = g_handler.get_message(msg_id)
+        content = g_handler.get_message(message_id)
 
         try:
             # Parse the content
-            g_handler.parse_message(content)
+            parsedMessage = g_handler.parse_message(content)
+            return parsedMessage, g_handler, service
 
         except KeyError as e:
             print(e)
-            pass
+            return _, g_handler, service
 
+def testGmailHandler_reply(criteria_selection):
+    """Tests the reply of emails that meet a certain criteria
+    
+        Args:
+            type: integer, Number of criteria to be met to initiate reply
+            1: Sender
+            2: Subject
+            3: Message Body
+            4: Sender and Subject
+            5: Sender and Message Body
+            6: Subject and Message Body
+            7: Sender, Subject, and Message Body
+
+    """
+
+    replyFlag = False
+    parsedMessage, g_handler, service = testGmailHandler_read()    
+
+    match criteria_selection:
+        case 1:
+            if parsedMessage['From'] == t_sender:
+                replyFlag = True
+        case 2:
+            if parsedMessage['Subject'] == t_subject:
+                replyFlag = True
+        case 3:
+            if parsedMessage['Body'] == t_message_body:
+                replyFlag = True
+        case 4:
+            if parsedMessage['From'] == t_sender and parsedMessage['Subject'] == t_subject:
+                replyFlag = True
+        case 5:
+            if parsedMessage['From'] == t_sender and parsedMessage['Body'] == t_message_body:
+                replyFlag = True
+        case 6:
+            if parsedMessage['Subject'] == t_subject and parsedMessage['Body'] == t_message_body:
+                replyFlag = True
+        case 7:
+            if parsedMessage['From'] == t_sender and parsedMessage['Subject'] == t_subject and parsedMessage['Body'] in t_message_body:
+                replyFlag = True
+        case _:
+            logging.error("Invalid option selection: {}".format(criteria_selection))
+
+    
+    if replyFlag:
+        # Create the reply message
+        reply = g_handler.create_message(t_user, t_to, t_subject, t_reply)
+
+        try:
+            # Send reply
+            g_handler.send_message(service, t_user, reply)
+
+            # Mark responded to message as read
+            g_handler.mark_as_read(parsedMessage['Message-Id'])
+        
+        except errors.HttpError as error:
+            logging.error('An HTTP error occurred: %s', error)  
+    
