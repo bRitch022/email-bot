@@ -24,7 +24,7 @@ class emailHandler_API:
 
         logging.basicConfig(
         format="[%(levelname)s] %(message)s",
-        level=logging.INFO
+        level=logging.DEBUG
     )
 
     def get_service(self):
@@ -242,19 +242,18 @@ class gmailHandler(emailHandler_API):
 
         # Parse headers
         for header in headers:
-            match header['name']:
-                case "to":
-                    receiver = header['value']
-                case "from":
-                    sender = header['value']
-                case "subject":
-                    subject = header['value']
-                case "Date":
-                    date = header['value']
-                case "Message-Id":
-                    message_id = header['value']
-                case _:
-                    pass
+            if header['name'] == "to":
+                receiver = header['value']
+            elif header['name'] == "from":
+                sender = header['value']
+            elif header['name'] == "subject":
+                subject = header['value']
+            elif header['name'] == "Date":
+                date = header['value']
+            elif header['name'] == "Message-Id":
+                message_id = header['value']
+            else:
+                pass
 
         # Parse and decode message body
         parts = payload.get('body')
@@ -267,7 +266,7 @@ class gmailHandler(emailHandler_API):
         logging.debug("Subject: {}".format(subject))
         logging.debug("Date: {}".format(date))
         logging.debug("InternalDate (Epoch): {}".format(internalDate))
-        logging.debug("\nBody: {}\n\n".format(body))
+        logging.debug("Body: {}\n\n".format(body))
 
         # Store parsed results to a dictionary
         parsed_message= {
@@ -395,30 +394,29 @@ def testGmailHandler_reply(criteria_selection):
     replyFlag = False
     parsedMessage, g_handler = testGmailHandler_read()    
 
-    match criteria_selection:
-        case 1:
-            if parsedMessage['From'] == t_sender:
-                replyFlag = True
-        case 2:
-            if parsedMessage['Subject'] == t_subject:
-                replyFlag = True
-        case 3:
-            if parsedMessage['Body'] == t_message_body:
-                replyFlag = True
-        case 4:
-            if parsedMessage['From'] == t_sender and parsedMessage['Subject'] == t_subject:
-                replyFlag = True
-        case 5:
-            if parsedMessage['From'] == t_sender and parsedMessage['Body'] == t_message_body:
-                replyFlag = True
-        case 6:
-            if parsedMessage['Subject'] == t_subject and parsedMessage['Body'] == t_message_body:
-                replyFlag = True
-        case 7:
-            if parsedMessage['From'] == t_sender and parsedMessage['Subject'] == t_subject and parsedMessage['Body'] in t_message_body:
-                replyFlag = True
-        case _:
-            logging.error("Invalid option selection: {}".format(criteria_selection))
+    if criteria_selection == 1:
+        if parsedMessage['From'] == t_sender:
+            replyFlag = True
+    elif criteria_selection == 2:
+        if parsedMessage['Subject'] == t_subject:
+            replyFlag = True
+    elif criteria_selection == 3:
+        if parsedMessage['Body'] == t_message_body:
+            replyFlag = True
+    elif criteria_selection == 4:
+        if parsedMessage['From'] == t_sender and parsedMessage['Subject'] == t_subject:
+            replyFlag = True
+    elif criteria_selection == 5:
+        if parsedMessage['From'] == t_sender and parsedMessage['Body'] == t_message_body:
+            replyFlag = True
+    elif criteria_selection == 6:
+        if parsedMessage['Subject'] == t_subject and parsedMessage['Body'] == t_message_body:
+            replyFlag = True
+    elif criteria_selection == 7:
+        if parsedMessage['From'] == t_sender and parsedMessage['Subject'] == t_subject and parsedMessage['Body'] in t_message_body:
+            replyFlag = True
+    else:
+        logging.error("Invalid option selection: {}".format(criteria_selection))
 
     
     if replyFlag:
