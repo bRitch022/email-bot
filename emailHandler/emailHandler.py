@@ -474,3 +474,14 @@ def t_monitorAndReply():
         print("Requests: {}\nQuota units: {}".format(list_requests, quota_units))
 
 
+def monitor(g_handler, criteria):
+    while(True):
+        try:
+            result = g_handler.list_messages(criteria=criteria)['resultSizeEstimate']
+        except errors.HttpError as error:
+            logging.error("An HTTP error occured: %s", error)
+            break
+
+        if(result != 0):
+            return result.get('messages')
+            

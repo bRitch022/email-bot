@@ -24,21 +24,21 @@ class emailBot:
 
     def from_prompt(self):
         criteria = input("From: ")
-        self.criteria['from'] = "from:{}".format(criteria)
+        self.criteria['from'] = "from:" + str(criteria)
 
         print("From Criteria: {}".format(self.criteria['from']))
 
     def subject_prompt(self):
         criteria = input("Subject containing: ")
-        self.criteria['subject'] = "subject:{}".format(criteria)
+        self.criteria['subject'] = "subject:" + str(criteria)
     
         print("Subject Criteria: {}".format(self.criteria['subject']))
 
     def message_body_prompt(self):
         criteria = input("Message body containing: ")
-        self.criteria['message_body'] = "{}".format(criteria)
+        self.criteria['message_body'] = str(criteria)
     
-        print("Containing '{}' in the message body".format(self.criteria['subject']))
+        print("Containing '{}' in the message body".format(self.criteria['message_body']))
 
     def criteria_prompt(self):
         print("Criteria Search Options:\n" \
@@ -78,46 +78,61 @@ class emailBot:
 
         print("Reply will be: {}:{}".format(self.replySubject, self.reply))
 
-    def package_criteria(criteria):
-        result = ""
+    def package_criteria(self, criteria):
+        result = "is:unread" # default for now
         for term in criteria:
-            result += str(term)
-
-        print(result)
+            result += " " + str(criteria[term])
         return result
 
-    def monitor(self):
+    def ACTION(self):
         while(True):
             try:
-                result = self.g_handler.list_messages(criteria=self.package_criteria(self.criteria))['resultSizeEstimate']
+                packaged_criteria = self.package_criteria(self.criteria)
+
+                result = self.g_handler.list_messages(criteria=packaged_criteria)
                 self.list_message_requests += 1
                 self.quota_units += 5
+
+                resultSize = result.get('resultSizeEstimate')
+
+                if(resultSize == 1):
+                    print("Email found! Responding")
+
+                    # Assume one message for now
+                    messages = result.get('messages')
+                    for msg in messages:
+                        message_id = msg['id']
+
+                    reply = self.g_handler.create_message(
+                        self.userAccount,
+                        self.criteria['from'].replace("from:", "", 1),
+                        self.replySubject,
+                        self.reply,
+                    )
+                    self.g_handler.send_message(
+                        self.service,
+                        self.userAccount,
+                        reply
+                    )
+                    self.quota_units += 100
+
+                    self.g_handler.mark_as_read(message_id)
+                    self.quota_units += 5
+
+                else:
+                    print("Waiting for message")
+                    print("Requests: {}\nQuota units: {}".format(self.list_message_requests, self.quota_units))
+
             except errors.HttpError as error:
                 print("An HTTP error occurred: {}".format(error))
                 break
-
-            if(result != 0):
-                print("Email found! Responding")
-                reply = self.g_handler.create_message(
-                    self.userAccount,
-                    self.criteria['from'],
-
-                )
-                self.g_handler.send_message(
-                    self.service,
-                    self.userAccount,
-                    self.reply
-                )
-                self.quota_units += 100
-            else:
-                print("Waiting for message")
-                print("Requests: {}\nQuota units: {}".format(self.list_message_requests, self.quota_units))
 
         
 
 
 if __name__ == '__main__':
     bot = emailBot()
+    bot.ACTION()
 
 # Prompt for user gmail account
 
