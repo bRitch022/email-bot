@@ -446,11 +446,14 @@ def t_monitorAndReply():
     service = g_handler.get_service()
 
     list_requests = 0
+    quota_units = 0
 
     while(True):
         try:
                 result = g_handler.list_messages(criteria="from:bryan.ritchie2@gmail.com is:unread subject:Test Subject")['resultSizeEstimate']
                 list_requests += 1
+                quota_units += 5
+                
         except errors.HttpError as error:
                 logging.error('An HTTP error occurred: %s', error)
                 break
@@ -458,10 +461,10 @@ def t_monitorAndReply():
         if(result != 0):
                 print("Email found! Responding")
                 testGmailHandler_reply(1)
+                quota_units += 100
         else:
                 print("Waiting for message")
 
-    print("List requests ended at {}", list_requests)
+        print("Requests: {}\nQuota units: {}".format(list_requests, quota_units))
 
-    
 
