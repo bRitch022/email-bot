@@ -1,6 +1,8 @@
+altgraph==0.17
 cachetools==4.2.2
 certifi==2021.5.30
 chardet==4.0.0
+DateTime==4.3
 google-api-core==1.30.0
 google-api-python-client==2.10.0
 google-auth==1.32.0
@@ -14,6 +16,8 @@ packaging==20.9
 protobuf==3.17.3
 pyasn1==0.4.8
 pyasn1-modules==0.2.8
+pyinstaller==4.3
+pyinstaller-hooks-contrib==2021.2
 pyparsing==2.4.7
 python-dotenv==0.18.0
 pytz==2021.1
@@ -23,3 +27,4 @@ rsa==4.7.2
 six==1.16.0
 uritemplate==3.0.1
 urllib3==1.26.6
+zope.interface==5.4.0
