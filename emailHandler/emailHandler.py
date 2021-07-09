@@ -12,6 +12,7 @@ from google.auth.transport.requests import Request
 from googleapiclient import errors
 from googleapiclient.discovery import build
 import time
+import datetime
         
 class emailHandler_API:
     """ A class to handle emails to a from a particular API """
@@ -62,6 +63,7 @@ class gmailHandler(emailHandler_API):
     def __init__(self, user):
         super().__init__()
         self.user = user
+        self.service = self.get_service()
 
     def get_service(self):
         """Gets an authorized Gmail API service instance.
@@ -95,8 +97,8 @@ class gmailHandler(emailHandler_API):
             with open('token.pickle', 'wb') as token:
                 pickle.dump(self.creds, token)
 
-        self.service = build('gmail', 'v1', credentials=self.creds)
-        return self.service
+        service = build('gmail', 'v1', credentials=self.creds)
+        return service
 
     def send_message(self, service, sender, message):
         """Send an email message.
@@ -114,6 +116,10 @@ class gmailHandler(emailHandler_API):
             sent_message = (service.users().messages().send(userId=sender, body=message)
                     .execute())
             logging.info('Message Id: %s', sent_message['id'])
+            logging.info(sent_message)
+            # logging.info(datetime.datetime.fromtimestamp(time.time().strftime('%c')))
+            sent_time = datetime.datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S')
+            logging.info("Sent at %s", sent_time)
             return sent_message
         except errors.HttpError as error:
             logging.error('An HTTP error occurred: %s', error)
