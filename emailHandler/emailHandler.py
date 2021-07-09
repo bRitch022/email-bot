@@ -204,10 +204,15 @@ class gmailHandler(emailHandler_API):
             self.service = self.get_service()
 
         try:
-            (self.service.users().messages().modify(\
-            userId=self.user,\
-            id=message_id,\
-            body={"removeLabelIds": ["UNREAD"]}).execute())
+            # (self.service
+            # .users()
+            # .messages()
+            # .modify(\
+            # userId=self.user,\
+            # id=message_id,\
+            # body={'removeLabelIds': ['UNREAD']} )
+            # .execute())
+            self.service.users().messages().modify(userId=self.user,id=message_id,body={'removeLabelIds': ['UNREAD']}).execute()
 
         except errors.HttpError as error:
             logging.error('An HTTP error occurred: %s', error)
@@ -221,6 +226,8 @@ class gmailHandler(emailHandler_API):
             userId=self.user,\
             id=message_id,\
             rbody={ 'addLabelIds': ['UNREAD'] }).execute())
+
+
 
         except errors.HttpError as error:
             logging.error('An HTTP error occurred: %s', error)        
@@ -251,6 +258,7 @@ class gmailHandler(emailHandler_API):
             elif header['name'] == "Date":
                 date = header['value']
             elif header['name'] == "Message-Id":
+                logging.debug("parse_message: message_id: {}".format(header['value']))
                 message_id = header['value']
             else:
                 pass
@@ -305,15 +313,15 @@ class POP3Handler(emailHandler_API):
 t_sender = "bryan.ritchie2@gmail.com"
 t_user = "bryan.ritchie2@gmail.com"
 t_to = "bryan.ritchie2@gmail.com"
-t_subject = "Test subject"
-t_message_body = "Test body"
+t_send_subject = "Test subject"
+t_reply_subject = "Reply subject"
+t_send_message_body = "Test body"
+t_reply_message_body = "Found test email. This is the reply"
 t_criteria = "from:bryan.ritchie2@gmail.com is:unread subject:Test Subject"
-t_reply = "Found test email. This is the reply"
 
 
 def testGmailHandler_send():
     """Tests the sending of emails"""
-    logging.debug("Default Sender: {}\nDefault Recipient: {}\nDefault Subject: {}\nDefault Message: {}\n".format(t_sender, t_to, t_subject, t_message_body))
 
     g_handler = gmailHandler(t_sender)
 
@@ -322,7 +330,7 @@ def testGmailHandler_send():
         service = g_handler.get_service()
 
         # Create a message 
-        message = g_handler.create_message(t_sender, t_to, t_subject, t_message_body)
+        message = g_handler.create_message(t_sender, t_to, t_send_subject, t_send_message_body)
 
         # Send out the message
         g_handler.send_message(service, t_sender, message)
@@ -356,7 +364,6 @@ def testGmailHandler_read():
         logging.error(e)
         raise
 
-    logging.debug("Found messages: {}".format(result["resultSizeEstimate"]))
     messages=result.get('messages')
 
     for msg in messages:
@@ -370,17 +377,18 @@ def testGmailHandler_read():
         try:
             # Parse the content
             parsedMessage = g_handler.parse_message(content)
-            return parsedMessage, g_handler
+            logging.debug("parsedMessage {}".format(parsedMessage))
+            return message_id, parsedMessage, g_handler
 
         except KeyError as e:
             logging.error(e)
-            return _, g_handler
+            return message_id, _, g_handler
 
 def testGmailHandler_reply(criteria_selection):
     """Tests the reply of emails that meet a certain criteria
     
         Args:
-            type: integer, Number of criteria to be met to initiate reply
+            criteria_selection: integer, Number of criteria to be met to initiate reply
             1: Sender
             2: Subject
             3: Message Body
@@ -392,7 +400,7 @@ def testGmailHandler_reply(criteria_selection):
     """
 
     replyFlag = False
-    parsedMessage, g_handler = testGmailHandler_read()    
+    message_id, parsedMessage, g_handler = testGmailHandler_read()    
 
     if criteria_selection == 1:
         if parsedMessage['From'] == t_sender:
@@ -421,14 +429,39 @@ def testGmailHandler_reply(criteria_selection):
     
     if replyFlag:
         # Create the reply message
-        reply = g_handler.create_message(t_user, t_to, t_subject, t_reply)
+        reply = g_handler.create_message(t_user, t_to, t_reply_subject, t_reply_message_body)
 
         try:
             # Send reply
             g_handler.send_message(g_handler.service, t_user, reply)
 
             # Mark responded to message as read
-            g_handler.mark_as_read(parsedMessage['Message-Id'])
+            g_handler.mark_as_read(message_id)
         
         except errors.HttpError as error:
             logging.error('An HTTP error occurred: %s', error)  
+
+def t_monitorAndReply():
+    g_handler = gmailHandler(t_sender)
+    service = g_handler.get_service()
+
+    list_requests = 0
+
+    while(True):
+        try:
+                result = g_handler.list_messages(criteria="from:bryan.ritchie2@gmail.com is:unread subject:Test Subject")['resultSizeEstimate']
+                list_requests += 1
+        except errors.HttpError as error:
+                logging.error('An HTTP error occurred: %s', error)
+                break
+
+        if(result != 0):
+                print("Email found! Responding")
+                testGmailHandler_reply(1)
+        else:
+                print("Waiting for message")
+
+    print("List requests ended at {}", list_requests)
+
+    
+
