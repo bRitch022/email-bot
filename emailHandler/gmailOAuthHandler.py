@@ -1,3 +1,9 @@
+"""
+
+********* DEPRICATED *********
+
+"""
+
 """ Gmail OAth2 Handler 
     Author: Steve Gore
     Date: August 5, 2019
