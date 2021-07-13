@@ -50,7 +50,6 @@ class emailBot:
                 "6: Subject and Message Body\n" \
                 "7: Sender, Subject, and Message Body\n")
         selection = input("Selection:")
-        print("Selection: {}".format(selection))
 
         if selection == '1':
             self.from_prompt()
@@ -73,51 +72,56 @@ class emailBot:
             self.message_body_prompt()
 
     def reply_prompt(self):
-        self.replySubject = input("Reply Subject: ")
-        self.reply = input("Reply: ")
+        self.reply = input("Reply Message : ")
 
-        print("Reply will be: {}:{}".format(self.replySubject, self.reply))
+        print("Reply will be: {}".format(self.reply))
 
     def package_criteria(self, criteria):
-        result = "is:unread" # default for now
+        result = "is:unread -RE:" # unread, not responses already
         for term in criteria:
             result += " " + str(criteria[term])
         return result
 
     def ACTION(self):
+        packaged_criteria = self.package_criteria(self.criteria)
+
         while(True):
             try:
-                packaged_criteria = self.package_criteria(self.criteria)
-
                 result = self.g_handler.list_messages(criteria=packaged_criteria)
                 self.list_message_requests += 1
                 self.quota_units += 5
 
                 resultSize = result.get('resultSizeEstimate')
 
-                if(resultSize == 1):
-                    print("Email found! Responding")
+                if(resultSize >= 1):
+                    print("{} Email(s) found! Responding".format(resultSize))
 
                     # Assume one message for now
                     messages = result.get('messages')
+                    print("Result: {}".format(result))
+
                     for msg in messages:
                         message_id = msg['id']
+                        content = self.g_handler.get_message(message_id)                        
+                        message = self.g_handler.parse_message(content)
 
-                    reply = self.g_handler.create_message(
-                        self.userAccount,
-                        self.criteria['from'].replace("from:", "", 1),
-                        self.replySubject,
-                        self.reply,
-                    )
-                    self.g_handler.send_message(
-                        self.service,
-                        self.userAccount,
-                        reply
-                    )
-                    self.quota_units += 100
+                        createdReply = self.g_handler.create_reply(message, self.reply)
+                        
+                        reply = self.g_handler.create_message(
+                            self.userAccount,
+                            createdReply['from'],
+                            createdReply['subject'],
+                            createdReply['message_body']
+                        )
+                        self.g_handler.send_message(
+                            self.service,
+                            self.userAccount,
+                            reply
+                        )
+                        self.quota_units += 100
 
-                    self.g_handler.mark_as_read(message_id)
-                    self.quota_units += 5
+                        self.g_handler.mark_as_read(message_id)
+                        self.quota_units += 5
 
                 else:
                     print("Waiting for message")

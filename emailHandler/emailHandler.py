@@ -13,6 +13,9 @@ from googleapiclient import errors
 from googleapiclient.discovery import build
 import time
 import datetime
+import secure_smtplib
+
+VERSION = "v0.1"
         
 class emailHandler_API:
     """ A class to handle emails to a from a particular API """
@@ -22,7 +25,6 @@ class emailHandler_API:
         self.service = None
         self.creds = None
         self.user = None
-
         logging.basicConfig(
         format="[%(levelname)s] %(message)s",
         level=logging.DEBUG
@@ -123,6 +125,34 @@ class gmailHandler(emailHandler_API):
             return sent_message
         except errors.HttpError as error:
             logging.error('An HTTP error occurred: %s', error)
+
+    def create_reply(self, message, replyMessage):
+        """ Reply to a message 
+        
+        Args:
+            message: the message that is being replied to
+            
+        Returns:
+            Message tail to be added to
+        """
+
+        reply_Msg = {
+            'from'      : self.user,
+            'to'        : message['From'],
+            'subject'   : "RE: " + str(message['Subject']),
+            'message_body' : replyMessage
+        }
+
+        reply_Msg['message_body'] += "\n\n\nPowered by Email-Bot {}".format(VERSION)
+        reply_Msg['message_body'] += ("\n\n")
+        reply_Msg['message_body'] += ("-------- Original message --------\n")
+        reply_Msg['message_body'] += ("From: {}\n".format(message['From']))
+        reply_Msg['message_body'] += ("Sent: {}\n".format(message['Date']))
+        reply_Msg['message_body'] += ("To: {}\n".format(message['To']))
+        reply_Msg['message_body'] += ("Subject: {}\n".format(message['Subject']))
+        reply_Msg['message_body'] += ("\n{}\n".format(message['Body']))
+
+        return reply_Msg
 
     def create_message(self, sender, to, subject, message_body):
         """Create a message for an email.
