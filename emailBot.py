@@ -88,6 +88,8 @@ class emailBot:
         while(True):
             try:
                 result = self.g_handler.list_messages(criteria=packaged_criteria)
+                # print("\n\nresult: {}".format(result))
+
                 self.list_message_requests += 1
                 self.quota_units += 5
 
@@ -101,25 +103,34 @@ class emailBot:
                     print("Result: {}".format(result))
 
                     for msg in messages:
+                        print("\n\nmsg: {}".format(msg))
+                        print("\n\nmessages: {}".format(messages))
+
                         message_id = msg['id']
-                        content = self.g_handler.get_message(message_id)                        
+                        print("\n\nmessage_id: {}".format(message_id))
+
+                        content = self.g_handler.get_message(message_id)  
+                        print("\n\ncontent: {}".format(content))
+
                         message = self.g_handler.parse_message(content)
+                        print("\n\nmessage: {}".format(message))
 
                         createdReply = self.g_handler.create_reply(message, self.reply)
-                        
+                        print("\n\ncreatedReply: {}".format(createdReply))
+
                         reply = self.g_handler.create_message(
                             self.userAccount,
                             createdReply['from'],
                             createdReply['subject'],
                             createdReply['message_body']
                         )
+                        print("\n\nreply: {}".format(reply))
+
                         self.g_handler.send_message(
                             self.service,
                             self.userAccount,
                             reply
                         )
-                        self.quota_units += 100
-
                         self.g_handler.mark_as_read(message_id)
                         self.quota_units += 5
 

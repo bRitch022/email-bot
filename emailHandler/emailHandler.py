@@ -279,51 +279,59 @@ class gmailHandler(emailHandler_API):
                 A dictionary containing the message
         """
         # Begin parsing timestamp, payload, and headers
-        internalDate = content['internalDate']
-        payload = content['payload']
-        headers = payload['headers']
+        if content is not None:
+            internalDate = content['internalDate']
+            payload = content['payload']
+            headers = payload['headers']
 
-        # Parse headers
-        for header in headers:
-            if header['name'] == "to":
-                receiver = header['value']
-            elif header['name'] == "from":
-                sender = header['value']
-            elif header['name'] == "subject":
-                subject = header['value']
-            elif header['name'] == "Date":
-                date = header['value']
-            elif header['name'] == "Message-Id":
-                logging.debug("parse_message: message_id: {}".format(header['value']))
-                message_id = header['value']
+            # Parse headers
+            for header in headers:
+                if header['name'] == "to":
+                    receiver = header['value']
+                elif header['name'] == "from":
+                    sender = header['value']
+                elif header['name'] == "subject":
+                    subject = header['value']
+                elif header['name'] == "Date":
+                    date = header['value']
+                elif header['name'] == "Message-Id":
+                    logging.debug("parse_message: message_id: {}".format(header['value']))
+                    message_id = header['value']
+                else:
+                    pass
+
+            # Parse and decode message body
+            parts = payload.get('body')
+            data = parts.get('data')
+
+            # print(("parts: {} type(data): {} data: {}".format(parts, type(data), data)))
+
+            if(data != None):
+                decoded_data = base64.b64decode(data)
+                body = decoded_data.decode()
+        
+                logging.debug("From: {}".format(sender))
+                logging.debug("To: {}".format(receiver))
+                logging.debug("Subject: {}".format(subject))
+                logging.debug("Date: {}".format(date))
+                logging.debug("InternalDate (Epoch): {}".format(internalDate))
+                logging.debug("Body: {}\n\n".format(body))
+
+                # Store parsed results to a dictionary
+                parsed_message= {
+                    "From": sender,
+                    "To": receiver,
+                    "Subject": subject,
+                    "Date": date,
+                    "InternalDate": internalDate,
+                    "Body": body,
+                    "Message-Id": message_id,
+                }
+
+                return parsed_message
+
             else:
-                pass
-
-        # Parse and decode message body
-        parts = payload.get('body')
-        data = parts.get('data')
-        decoded_data = base64.b64decode(data)
-        body = decoded_data.decode()
-    
-        logging.debug("From: {}".format(sender))
-        logging.debug("To: {}".format(receiver))
-        logging.debug("Subject: {}".format(subject))
-        logging.debug("Date: {}".format(date))
-        logging.debug("InternalDate (Epoch): {}".format(internalDate))
-        logging.debug("Body: {}\n\n".format(body))
-
-        # Store parsed results to a dictionary
-        parsed_message= {
-            "From": sender,
-            "To": receiver,
-            "Subject": subject,
-            "Date": date,
-            "InternalDate": internalDate,
-            "Body": body,
-            "Message-Id": message_id,
-        }
-
-        return parsed_message
+                return None
 
 
 class POP3Handler(emailHandler_API):
