@@ -1,4 +1,5 @@
 import emailHandler.emailHandler as eHandler
+import emailHandler.message as m
 from googleapiclient import errors
 
 class emailBot:
@@ -112,25 +113,32 @@ class emailBot:
                         content = self.g_handler.get_message(message_id)  
                         print("\n\ncontent: {}".format(content))
 
-                        message = self.g_handler.parse_message(content)
-                        print("\n\nmessage: {}".format(message))
+                        new_message = m.message().consume_json(content)
 
-                        createdReply = self.g_handler.create_reply(message, self.reply)
+
+                        # message = self.g_handler.parse_message(content)
+                        # print("\n\nmessage: {}".format(message))
+                        print("\n\nmessage: {}".format(new_message))
+
+                        # createdReply = self.g_handler.create_reply(message, self.reply)
+                        createdReply = new_message.create_reply(self.reply)
                         print("\n\ncreatedReply: {}".format(createdReply))
 
-                        reply = self.g_handler.create_message(
-                            self.userAccount,
-                            createdReply['from'],
-                            createdReply['subject'],
-                            createdReply['message_body']
-                        )
-                        print("\n\nreply: {}".format(reply))
+                        # reply = self.g_handler.create_message(
+                        #     self.userAccount,
+                        #     createdReply['from'],
+                        #     createdReply['subject'],
+                        #     createdReply['message_body']
+                        # )
+
+                        print("\n\nreply: {}".format(createdReply))
 
                         self.g_handler.send_message(
                             self.service,
                             self.userAccount,
-                            reply
+                            createdReply
                         )
+
                         self.g_handler.mark_as_read(message_id)
                         self.quota_units += 5
 
