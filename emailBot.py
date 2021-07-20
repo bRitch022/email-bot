@@ -113,15 +113,16 @@ class emailBot:
                         content = self.g_handler.get_message(message_id)  
                         print("\n\ncontent: {}".format(content))
 
-                        new_message = m.message().consume_json(content)
-
+                        new_message = m.message()
+                        new_message.consume_json(content)
 
                         # message = self.g_handler.parse_message(content)
                         # print("\n\nmessage: {}".format(message))
-                        print("\n\nmessage: {}".format(new_message))
+                        print("\n\nmessage: {}".format(new_message.contents))
 
                         # createdReply = self.g_handler.create_reply(message, self.reply)
-                        createdReply = new_message.create_reply(self.reply)
+                        new_message.create_reply(self.reply)
+                        createdReply = new_message.encoded_data
                         print("\n\ncreatedReply: {}".format(createdReply))
 
                         # reply = self.g_handler.create_message(
