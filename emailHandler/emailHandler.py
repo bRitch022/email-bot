@@ -13,6 +13,9 @@ from googleapiclient import errors
 from googleapiclient.discovery import build
 import time
 import datetime
+import secure_smtplib
+
+VERSION = "v0.1"
         
 class emailHandler_API:
     """ A class to handle emails to a from a particular API """
@@ -22,7 +25,6 @@ class emailHandler_API:
         self.service = None
         self.creds = None
         self.user = None
-
         logging.basicConfig(
         format="[%(levelname)s] %(message)s",
         level=logging.DEBUG
@@ -123,6 +125,34 @@ class gmailHandler(emailHandler_API):
             return sent_message
         except errors.HttpError as error:
             logging.error('An HTTP error occurred: %s', error)
+
+    def create_reply(self, message, replyMessage):
+        """ Reply to a message 
+        
+        Args:
+            message: the message that is being replied to
+            
+        Returns:
+            Message tail to be added to
+        """
+
+        reply_Msg = {
+            'from'      : self.user,
+            'to'        : message['From'],
+            'subject'   : "RE: " + str(message['Subject']),
+            'message_body' : replyMessage
+        }
+
+        reply_Msg['message_body'] += "\n\n\nPowered by Email-Bot {}".format(VERSION)
+        reply_Msg['message_body'] += ("\n\n")
+        reply_Msg['message_body'] += ("-------- Original message --------\n")
+        reply_Msg['message_body'] += ("From: {}\n".format(message['From']))
+        reply_Msg['message_body'] += ("Sent: {}\n".format(message['Date']))
+        reply_Msg['message_body'] += ("To: {}\n".format(message['To']))
+        reply_Msg['message_body'] += ("Subject: {}\n".format(message['Subject']))
+        reply_Msg['message_body'] += ("\n{}\n".format(message['Body']))
+
+        return reply_Msg
 
     def create_message(self, sender, to, subject, message_body):
         """Create a message for an email.
@@ -249,51 +279,59 @@ class gmailHandler(emailHandler_API):
                 A dictionary containing the message
         """
         # Begin parsing timestamp, payload, and headers
-        internalDate = content['internalDate']
-        payload = content['payload']
-        headers = payload['headers']
+        if content is not None:
+            internalDate = content['internalDate']
+            payload = content['payload']
+            headers = payload['headers']
 
-        # Parse headers
-        for header in headers:
-            if header['name'] == "to":
-                receiver = header['value']
-            elif header['name'] == "from":
-                sender = header['value']
-            elif header['name'] == "subject":
-                subject = header['value']
-            elif header['name'] == "Date":
-                date = header['value']
-            elif header['name'] == "Message-Id":
-                logging.debug("parse_message: message_id: {}".format(header['value']))
-                message_id = header['value']
+            # Parse headers
+            for header in headers:
+                if header['name'] == "to":
+                    receiver = header['value']
+                elif header['name'] == "from":
+                    sender = header['value']
+                elif header['name'] == "subject":
+                    subject = header['value']
+                elif header['name'] == "Date":
+                    date = header['value']
+                elif header['name'] == "Message-Id":
+                    logging.debug("parse_message: message_id: {}".format(header['value']))
+                    message_id = header['value']
+                else:
+                    pass
+
+            # Parse and decode message body
+            parts = payload.get('body')
+            data = parts.get('data')
+
+            # print(("parts: {} type(data): {} data: {}".format(parts, type(data), data)))
+
+            if(data != None):
+                decoded_data = base64.b64decode(data)
+                body = decoded_data.decode()
+        
+                logging.debug("From: {}".format(sender))
+                logging.debug("To: {}".format(receiver))
+                logging.debug("Subject: {}".format(subject))
+                logging.debug("Date: {}".format(date))
+                logging.debug("InternalDate (Epoch): {}".format(internalDate))
+                logging.debug("Body: {}\n\n".format(body))
+
+                # Store parsed results to a dictionary
+                parsed_message= {
+                    "From": sender,
+                    "To": receiver,
+                    "Subject": subject,
+                    "Date": date,
+                    "InternalDate": internalDate,
+                    "Body": body,
+                    "Message-Id": message_id,
+                }
+
+                return parsed_message
+
             else:
-                pass
-
-        # Parse and decode message body
-        parts = payload.get('body')
-        data = parts.get('data')
-        decoded_data = base64.b64decode(data)
-        body = decoded_data.decode()
-    
-        logging.debug("From: {}".format(sender))
-        logging.debug("To: {}".format(receiver))
-        logging.debug("Subject: {}".format(subject))
-        logging.debug("Date: {}".format(date))
-        logging.debug("InternalDate (Epoch): {}".format(internalDate))
-        logging.debug("Body: {}\n\n".format(body))
-
-        # Store parsed results to a dictionary
-        parsed_message= {
-            "From": sender,
-            "To": receiver,
-            "Subject": subject,
-            "Date": date,
-            "InternalDate": internalDate,
-            "Body": body,
-            "Message-Id": message_id,
-        }
-
-        return parsed_message
+                return None
 
 
 class POP3Handler(emailHandler_API):
