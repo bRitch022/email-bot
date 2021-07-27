@@ -11,16 +11,16 @@ class emailBot:
         self.list_message_requests = 0
         self.quota_units = 0
 
-        # self.account_prompt()
-        # self.criteria_prompt()
-        # self.reply_prompt()
+        self.account_prompt()
+        self.criteria_prompt()
+        self.reply_prompt()
 
-        self.userAccount = "bryan.ritchie2@gmail.com"
-        self.criteria['from'] = "from:bryan.ritchie2@gmail.com is:unread"
-        self.criteria['subject'] = "Test subject"
-        self.reply = "Hey fucker, \n" + \
-                     "Just replying to your message. Have a great day. \n" +  \
-                     " -B"
+        # self.userAccount = "bryan.ritchie2@gmail.com"
+        # self.criteria['from'] = "from:bryan.ritchie2@gmail.com is:unread"
+        # self.criteria['subject'] = "Test subject"
+        # self.reply = "Hey fucker, \n" + \
+        #              "Just replying to your message. Have a great day. \n" +  \
+        #              " -B"
 
         self.g_handler = eHandler.gmailHandler(self.userAccount)
         print(self.g_handler)
@@ -85,7 +85,7 @@ class emailBot:
         print("Reply will be: {}".format(self.reply))
 
     def package_criteria(self, criteria):
-        result = "is:unread -RE:" # ignore unread and RE: emails
+        result = "is:unread -RE: -is:BOT_REPLIED" # ignore unread and RE: emails
         for term in criteria:
             result += " " + str(criteria[term])
         return result

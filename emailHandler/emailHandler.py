@@ -174,6 +174,19 @@ class gmailHandler(emailHandler_API):
         b = base64.urlsafe_b64encode(s.encode('utf-8'))
         return {'raw': b.decode('utf-8')}
 
+    def create_label(self, label):
+        """ Create a label to custom mark message objects
+        
+        Args:
+            label: The label to be created
+        """
+        label = 
+        if self.service is None:
+            self.service = self.get_service()
+
+        try:
+            (self.service.users().lables().create()).execute
+
     def list_messages(self, includeSpamTrash=None, maxResults=None, criteria=None):
         """List messages in an email account.
 
@@ -248,8 +261,9 @@ class gmailHandler(emailHandler_API):
             # id=message_id,\
             # body={'removeLabelIds': ['UNREAD']} )
             # .execute())
-            self.service.users().messages().modify(userId=self.user,id=message_id,body={'removeLabelIds': ['UNREAD']}).execute()
-
+            # self.service.users().messages().modify(userId=self.user,id=message_id,body={'removeLabelIds': ['UNREAD']}).execute()
+            self.service.users().messages().modify(userId=self.user,id=message_id,body={'addLabelIds': ['BOT_REPLIED']}).execute()
+            
         except errors.HttpError as error:
             logging.error('An HTTP error occurred: %s', error)
 

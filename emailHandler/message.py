@@ -54,8 +54,11 @@ class message(object):
             self.data = self.parts.get('data')
 
             if(self.data != None):
-                decoded_data = base64.b64decode(self.data)
-                self.contents['body'] = decoded_data.decode()
+                try:
+                    decoded_data = base64.b64decode(self.data)  
+                    self.contents['body'] = decoded_data.decode()
+                except UnicodeDecodeError as e:
+                    print(e)
 
     def encode_msg(self):
         """Encode a message object into a url safe message"""
