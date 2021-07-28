@@ -1,6 +1,7 @@
 import emailHandler.emailHandler as eHandler
 import emailHandler.message as m
 from googleapiclient import errors
+import time
 
 class emailBot:
     def __init__(self):
@@ -10,10 +11,16 @@ class emailBot:
         self.instances = 0
         self.list_message_requests = 0
         self.quota_units = 0
+        self.time_since_sent_requirement = 10 # 10 second default # A value to react to messages in the past. 
+                                              # This value is in seconds and is subtracted from the current time
+                                              # to determine whether an email should be responded to or not.
+                                              # This is important because we don't want to respond to messages that
+                                              # are too old, such as greater than 10 seconds old.
 
         # self.account_prompt()
         # self.criteria_prompt()
         # self.reply_prompt()
+        self.time_since_sent_prompt()
 
         self.userAccount = "bryan.ritchie2@gmail.com"
         self.criteria['from'] = "from:bryan.ritchie2@gmail.com is:unread"
@@ -25,7 +32,6 @@ class emailBot:
         self.g_handler = eHandler.gmailHandler(self.userAccount)
         print(self.g_handler)
         self.service = self.g_handler.get_service()
-
 
     def account_prompt(self):
         self.userAccount = input("Enter your gmail user account: ")
@@ -47,6 +53,11 @@ class emailBot:
         self.criteria['message_body'] = str(criteria)
     
         print("Containing '{}' in the message body".format(self.criteria['message_body']))
+    
+    def time_since_sent_prompt(self):
+        self.time_since_sent_requirement = int(input("Time since sent requirement: "))
+
+        print("All emails later than {} will be ignored".format(int(time.time()) - self.time_since_sent_requirement))
 
     def criteria_prompt(self):
         print("Criteria Search Options:\n" \
@@ -80,7 +91,7 @@ class emailBot:
             self.message_body_prompt()
 
     def reply_prompt(self):
-        self.reply = input("Reply Message : ")
+        self.reply = input("Reply Message: ")
 
         print("Reply will be: {}".format(self.reply))
 
@@ -92,6 +103,7 @@ class emailBot:
 
     def ACTION(self):
         packaged_criteria = self.package_criteria(self.criteria)
+        processed = []
 
         while(True):
             try:
@@ -111,44 +123,44 @@ class emailBot:
                     print("Result: {}".format(result))
 
                     for msg in messages:
-                        print("\n\nmsg: {}".format(msg))
-                        print("\n\nmessages: {}".format(messages))
+                        if msg['id'] in processed:
+                            print("skipping {}".format(msg['id']))
+                            break
+
+                        # TODO (BAR): print if config.debug is set. Parse debug options as argv
+                        # print("\n\nmsg: {}".format(msg))
+                        # print("\n\nmessages: {}".format(messages))
 
                         message_id = msg['id']
-                        print("\n\nmessage_id: {}".format(message_id))
+                        # print("\n\nmessage_id: {}".format(message_id))
 
                         content = self.g_handler.get_message(message_id)  
                         print("\n\ncontent: {}".format(content))
 
                         new_message = m.message()
                         new_message.consume_json(content)
+                        # print("\n\nmessage: {}".format(new_message.contents))
 
-                        # message = self.g_handler.parse_message(content)
-                        # print("\n\nmessage: {}".format(message))
-                        print("\n\nmessage: {}".format(new_message.contents))
+                        # time_since_sent = int(time.time()) - int(new_message.contents['date'])
+                        time_now = int(time.time())
+                        time_sent = int(new_message.contents['date'])
+                        time_since_sent = time_now - time_sent
+                        print("\n\n\n\ntime_now:{}  time_sent:{} time_since_sent:{}".format(time_now, time_sent, time_since_sent))
 
-                        # createdReply = self.g_handler.create_reply(message, self.reply)
-                        new_message.create_reply(self.reply)
-                        createdReply = new_message.encoded_data
-                        print("\n\ncreatedReply: {}".format(createdReply))
+                        if(time_since_sent < self.time_since_sent_requirement):
+                            createdReply = new_message.create_reply(self.reply) 
+                            print("\n\ncreatedReply: {}".format(createdReply))
 
-                        # reply = self.g_handler.create_message(
-                        #     self.userAccount,
-                        #     createdReply['from'],
-                        #     createdReply['subject'],
-                        #     createdReply['message_body']
-                        # )
+                            self.g_handler.send_message(
+                                self.service,
+                                self.userAccount,
+                                createdReply
+                            )
+                            print("\n\nResponse sent!")
+                            self.quota_units += 100
+                            self.g_handler.mark_as_read(message_id)
 
-                        print("\n\nreply: {}".format(createdReply))
-
-                        self.g_handler.send_message(
-                            self.service,
-                            self.userAccount,
-                            createdReply
-                        )
-
-                        self.g_handler.mark_as_read(message_id)
-                        self.quota_units += 5
+                        processed.append(content['id'])
 
                 else:
                     print("Waiting for message")
@@ -157,9 +169,6 @@ class emailBot:
             except errors.HttpError as error:
                 print("An HTTP error occurred: {}".format(error))
                 break
-
-        
-
 
 if __name__ == '__main__':
     bot = emailBot()

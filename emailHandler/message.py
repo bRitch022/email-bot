@@ -26,23 +26,24 @@ class message(object):
     def consume_json(self, json):
         self.contents['id'] = json['id']
         self.contents['labelIds'] = json['labelIds']
-        self.contents['date'] = json['internalDate']
+        self.contents['date'] = json['internalDate'][0:10] # epoch time only 10 digits. Cut off the remaining characters
         payload = json['payload']
         headers = payload['headers']
 
         for header in headers:
-            print("Consume [{}]:[{}]".format(header['name'], header['value']))
             try:
                 if header['name'] == 'to':
                     self.contents['recipient'] = header['value']
+                    # print("Consumed ['to']:{}".format(self.contents['recipient']))
                 elif header['name'] == 'from':
                     self.contents['sender'] = header['value']
+                    # print("Consumed ['from']:{}".format(self.contents['sender']))
                 elif header['name'] == 'subject':
                     self.contents['subject'] = header['value']
+                    # print("Consumed ['subject']:{}".format(self.contents['subject']))
                 elif header['name'] == "date":
                     self.contents['string_date'] = header['value']
-                elif self.contents['name'] == 'Message-Id':
-                    self.contents['id'] = header['value']
+                    # print("Consumed ['date']:{}".format(self.contents['string_date']))
                 else:
                     pass
 
@@ -51,11 +52,15 @@ class message(object):
                 pass
 
             self.parts = payload.get('body')
+            # print("Consumed ['body']:{}".format(self.parts))
             self.data = self.parts.get('data')
+            # print("Consumed ['data']:{}".format(self.data))
 
             if(self.data != None):
                 decoded_data = base64.b64decode(self.data)
                 self.contents['body'] = decoded_data.decode()
+                # print("Consumed ['body']:{}".format(self.contents['body']))
+                
 
     def encode_msg(self):
         """Encode a message object into a url safe message"""
@@ -69,8 +74,6 @@ class message(object):
         self.encoded_data = {
             'raw' : b64.decode('utf-8')
         }
-
-        # return b64.decode('utf-8')
 
     def decode_msg(self):
         decoded_data = base64.b64decode(self.encoded_data)
@@ -98,6 +101,8 @@ class message(object):
         self.contents['subject'] = "RE: " + str(orig_subject)
 
         self.encode_msg()
+
+        return self.encoded_data
 
     
 
