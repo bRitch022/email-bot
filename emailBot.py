@@ -165,18 +165,19 @@ class emailBot_CommandLine(emailBot):
         super().__init__()
 
         # self.account_prompt()
-        # self.criteria_prompt()
+        self.criteria_prompt()
         # self.reply_prompt()
         self.time_since_sent_prompt()
 
         self.userAccount = "bryan.ritchie2@gmail.com"
-        self.criteria['from'] = "from:bryan.ritchie2@gmail.com is:unread"
-        self.criteria['subject'] = "Test subject"
+        # self.criteria['from'] = "from:bryan.ritchie2@gmail.com is:unread"
+        # self.criteria['subject'] = "Test subject"
         self.reply = "Hey fucker, \n" + \
                      "Just replying to your message. Have a great day. \n" +  \
                      " -B"
 
         self.g_handler = eHandler.gmailHandler(self.userAccount)
+
         self.g_service = self.g_handler.get_service()
 
     def account_prompt(self):
@@ -186,7 +187,7 @@ class emailBot_CommandLine(emailBot):
         criteria = input("From: ")
         self.criteria['from'] = "from:" + str(criteria)
 
-        print("From Criteria: {}".format(self.criteria['from']))
+        print("From Criteria: {}".format(self.criteria['from'][5:]))
 
     def subject_prompt(self):
         criteria = input("Subject containing: ")
