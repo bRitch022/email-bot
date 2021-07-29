@@ -154,7 +154,8 @@ class emailBot:
 
                 else:
                     print("Waiting for message")
-                    print("Requests: {}\nQuota units: {}".format(self.list_message_requests, self.quota_units))
+                    
+                print("Requests: {}\nQuota units: {}".format(self.list_message_requests, self.quota_units))
 
             except errors.HttpError as error:
                 print("An HTTP error occurred: {}".format(error))

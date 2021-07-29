@@ -2,7 +2,7 @@ import base64
 from email.mime.text import MIMEText
 
 # TODO (BAR): import VERSION
-VERSION = "v0.1"
+VERSION = "v0.2"
 
 class message(object):
     def __init__(self):
@@ -57,9 +57,16 @@ class message(object):
             # print("Consumed ['data']:{}".format(self.data))
 
             if(self.data != None):
-                decoded_data = base64.b64decode(self.data)
-                self.contents['body'] = decoded_data.decode()
-                # print("Consumed ['body']:{}".format(self.contents['body']))
+                try:
+                    decoded_data = base64.b64decode(self.data)
+                except:
+                    return
+
+                try:
+                    self.contents['body'] = decoded_data.decode()
+                    # print("Consumed ['body']:{}".format(self.contents['body']))
+                except UnicodeDecodeError as e:
+                    print(e)
                 
 
     def encode_msg(self):
