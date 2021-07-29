@@ -1,12 +1,7 @@
-<!DOCTYPE html>
-<html>
-    <head>
-        <title></title>
-    </head>
-    <body>
-        <h1>Form Home</h1>
-        {% for data in data %}
-            <p>{{ data }}</p>
-        {% endfor %}
-    </body>
-</html>
+{% extends "bot_form/base.html" %}
+{% block content %}
+    <h1>Form Home</h1>
+    {% for data in data %}
+        <p>{{ data }}</p>
+    {% endfor %}
+{% endblock content %}
