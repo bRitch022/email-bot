@@ -129,7 +129,7 @@ class emailBot:
 
                         new_message = m.message()
                         new_message.consume_json(content)
-                        # print("\n\nmessage: {}".format(new_message.contents))
+                        print("\n\nnew_message: {}".format(new_message.contents))
 
                         # time_since_sent = int(time.time()) - int(new_message.contents['date'])
                         time_now = int(time.time())
