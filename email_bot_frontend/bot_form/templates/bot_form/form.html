@@ -1,13 +1,15 @@
 {% extends "bot_form/base.html" %}
 {% block content %}
     <h1>Form Home</h1>
-    {% for bot in data %}
+    {% for bot in bots %}
         <p>Sender email: {{ bot.sender }}</p>
+        <p>Email password: {{ bot.email_password }}</p>
         <p>From email: {{ bot.from_email }}</p>
         <p>To email: {{ bot.to_email }}</p>
-        <p>Email password: {{ bot.email_password }}</p>
         <p>Subject: {{ bot.subject }}</p>
         <p>Email Content: {{ bot.email_content }}</p>
+        <h1>----</h1>
     {% endfor %}
+    
     
 {% endblock content %}
