@@ -13,6 +13,7 @@ class Email_Bot(models.Model):
     to_email = models.CharField(max_length=50)
     subject = models.CharField(max_length=150)
     email_content = models.TextField()
+    response = models.TextField()
     
     def get_absolute_url(self):
         return reverse('form-home')

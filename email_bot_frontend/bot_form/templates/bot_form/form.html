@@ -22,12 +22,14 @@
 
     <br>
     {% for bot in bots %}
+        <p>Search Criteria:</p>
         <p>Sender email: {{ bot.sender }}</p>
-        <p>Email password: {{ bot.email_password }}</p>
+        <!-- <p>Email password: {{ bot.email_password }}</p> -->
         <p>From email: {{ bot.from_email }}</p>
-        <p>To email: {{ bot.to_email }}</p>
+        <!-- <p>To email: {{ bot.to_email }}</p> -->
         <p>Subject: {{ bot.subject }}</p>
         <p>Email Content: {{ bot.email_content }}</p>
+        <p>Response: {{ bot.response }}</p>
         <h1>--------------</h1>
     {% endfor %}
     
