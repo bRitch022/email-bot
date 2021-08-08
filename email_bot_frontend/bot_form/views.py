@@ -26,6 +26,7 @@ class BotCreateView(LoginRequiredMixin, CreateView):
     def form_valid(self, form):
         form.instance.creator = self.request.user
         # Create email bot here
+        # Check for token update
         return super().form_valid(form)
 
 class BotUpdateView(LoginRequiredMixin, UpdateView):
@@ -35,4 +36,7 @@ class BotUpdateView(LoginRequiredMixin, UpdateView):
     def form_valid(self, form):
         form.instance.creator = self.request.user
         # Update email bot here
+        # Check for token update
         return super().form_valid(form)
+
+# class BotDetailView(LoginRequiredMixin, DetailView): # Will have all bot info, update button, activate/deactivate
