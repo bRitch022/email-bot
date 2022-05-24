@@ -25,7 +25,7 @@ class emailHandler_API:
         self.service = None
         self.creds = None
         self.user = None
-        logging.basicConfig(
+        logging.basicConfig( # TODO (BAR): This needs to go elsewhere
         format="[%(levelname)s] %(message)s",
         level=logging.DEBUG
     )
