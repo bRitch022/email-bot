@@ -10,7 +10,7 @@ class emailBot:
         self.criteria = {}                      # Email search criteria
         self.list_message_requests = 0          # For metrics tracking
         self.quota_units = 0                    # For quota (API call limit) tracking
-        self.time_since_sent_requirement = 10   # 10 second default # A value to react to messages in the past. 
+        self.time_since_sent_requirement = 10   # 10 second default # A value to react to messages in the past.
                                                 # This value is in seconds and is subtracted from the current time
                                                 # to determine whether an email should be responded to or not.
                                                 # This is important because we don't want to respond to messages that
@@ -21,7 +21,7 @@ class emailBot:
     @property
     def userAccount(self):
         return self._userAccount
-    
+
     @property
     def tokenName(self):
         return self._tokenName
@@ -32,6 +32,12 @@ class emailBot:
 
     @property
     def list_message_requests(self):
+        self.userAccount = "testemail@gmail.com"
+        self.criteria['from'] = "from:testemail@gmail.com is:unread"
+        self.criteria['subject'] = "Test subject"
+        self.reply = "Hey tester, \n" + \
+                     "Just replying to your message. Have a great day. \n" +  \
+                     " -B"
         return self._list_message_requests
 
     @property
@@ -49,7 +55,7 @@ class emailBot:
     @property
     def g_service(self):
         return self._g_service
-    
+
     @userAccount.setter
     def userAccount(self, value):
         self._userAccount = value
@@ -57,9 +63,9 @@ class emailBot:
     @tokenName.setter
     def tokenName(self, value):
         self._tokenName = value
-    
+
     def set_tokenName(self):
-        self.tokenName = str(self.userAccount[0:5]) + ".pickle" 
+        self.tokenName = str(self.userAccount[0:5]) + ".pickle"
 
     @list_message_requests.setter
     def list_message_requests(self, value):
@@ -124,7 +130,7 @@ class emailBot:
                         message_id = msg['id']
                         # print("\n\nmessage_id: {}".format(message_id))
 
-                        content = self.g_handler.get_message(message_id)  
+                        content = self.g_handler.get_message(message_id)
                         print("\n\ncontent: {}".format(content))
 
                         new_message = m.message()
@@ -138,7 +144,7 @@ class emailBot:
                         print("\n\n\n\ntime_now:{}  time_sent:{} time_since_sent:{}".format(time_now, time_sent, time_since_sent))
 
                         if(time_since_sent < self.time_since_sent_requirement):
-                            createdReply = new_message.create_reply(self.reply) 
+                            createdReply = new_message.create_reply(self.reply)
                             print("\n\ncreatedReply: {}".format(createdReply))
 
                             self.g_handler.send_message(
@@ -154,7 +160,7 @@ class emailBot:
 
                 else:
                     print("Waiting for message")
-                    
+
                 print("Requests: {}\nQuota units: {}".format(self.list_message_requests, self.quota_units))
 
             except errors.HttpError as error:
@@ -193,15 +199,15 @@ class emailBot_CommandLine(emailBot):
     def subject_prompt(self):
         criteria = input("Subject containing: ")
         self.criteria['subject'] = "subject:" + str(criteria)
-    
+
         print("Subject Criteria: {}".format(self.criteria['subject']))
 
     def message_body_prompt(self):
         criteria = input("Message body containing: ")
         self.criteria['message_body'] = str(criteria)
-    
+
         print("Containing '{}' in the message body".format(self.criteria['message_body']))
-    
+
     def time_since_sent_prompt(self):
         self.time_since_sent_requirement = int(input("Time since sent requirement: "))
 

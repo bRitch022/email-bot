@@ -1,0 +1,37 @@
+{% extends "bot_form/base.html" %}
+{% block content %}
+    <h1>Form Home</h1>
+    <br>
+    <form method="get" action="{%url 'bot-create'%}">
+        <button type="submit">Create Bot</button>
+    </form>
+
+    <!-- TODO These will be on the detail bot page -->
+    
+    <!-- TODO <form method="get" action="{%url 'bot-create'%}"></form> -->
+        <!-- <button type="submit">Update Bot</button> -->
+    <!-- </form> -->
+
+    <!-- <form method="get" action="{%url 'bot-create'%}"></form> -->
+        <!-- <button type="submit">Activate Bot</button> -->
+    <!-- </form> -->
+
+    <!-- TODO <form method="get" action="{%url 'bot-create'%}"></form> -->
+        <!-- <button type="submit">Deactivate Bot</button> -->
+    <!-- </form> -->
+
+    <br>
+    {% for bot in bots %}
+        <p>Search Criteria:</p>
+        <p>Sender email: {{ bot.sender }}</p>
+        <!-- <p>Email password: {{ bot.email_password }}</p> -->
+        <p>From email: {{ bot.from_email }}</p>
+        <!-- <p>To email: {{ bot.to_email }}</p> -->
+        <p>Subject: {{ bot.subject }}</p>
+        <p>Email Content: {{ bot.email_content }}</p>
+        <p>Response: {{ bot.response }}</p>
+        <h1>--------------</h1>
+    {% endfor %}
+    
+    
+{% endblock content %}
