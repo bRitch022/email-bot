@@ -1,5 +1,5 @@
 # email-bot
-A bot designed to quickly and autonomously reply to emails which meet one or more certain criteria
+A largely unfinished bot designed to quickly and autonomously reply to emails which meet one or more certain criteria
 
 ## Use case
 1) A user wishes to rapidly and autonomously reply to an email which matches sender criteria
