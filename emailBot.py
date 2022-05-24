@@ -22,10 +22,10 @@ class emailBot:
         # self.reply_prompt()
         self.time_since_sent_prompt()
 
-        self.userAccount = "bryan.ritchie2@gmail.com"
-        self.criteria['from'] = "from:bryan.ritchie2@gmail.com is:unread"
+        self.userAccount = "testemail@gmail.com"
+        self.criteria['from'] = "from:testemail@gmail.com is:unread"
         self.criteria['subject'] = "Test subject"
-        self.reply = "Hey fucker, \n" + \
+        self.reply = "Hey tester, \n" + \
                      "Just replying to your message. Have a great day. \n" +  \
                      " -B"
 
